@@ -36,7 +36,7 @@ from html import escape
 from typing import Any, Dict, List, Optional, Union
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic import ValidationError as PydanticValidationError
@@ -203,6 +203,12 @@ def _predict(state: Any, questions: Dict[str, Any], **kw: Any) -> Dict[str, Any]
 def _questions(model_map: Dict[str, Question]) -> Dict[str, Any]:
     """Back to the plain dicts laya expects, dropping unset keys."""
     return {k: v.model_dump(exclude_none=True) for k, v in model_map.items()}
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon() -> Response:
+    """Answer direct icon requests (e.g. the JSON endpoints) without a 404."""
+    return Response(status_code=204)
 
 
 @app.get("/health")
@@ -515,10 +521,19 @@ _NAV = (
 )
 
 
+# Inline icon (the navy square from the nav logo) so browsers never ask for /favicon.ico.
+_FAVICON = (
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E"
+    "%3Crect width='16' height='16' rx='3' fill='%23122236'/%3E"
+    "%3Crect x='5' y='5' width='6' height='6' fill='%23f7f5ef'/%3E%3C/svg%3E"
+)
+
+
 def _page(title: str, body: str) -> HTMLResponse:
     return HTMLResponse(
         f"<!doctype html><html><head><meta charset='utf-8'>"
         f"<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        f"<link rel='icon' href=\"{_FAVICON}\">"
         f"<title>{escape(title)}</title><style>{_CSS}</style>"
         f"<script>{_THEME_JS}</script></head>"
         f"<body><div class='shell'>{_NAV}{body}</div>"
